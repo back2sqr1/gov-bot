@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+congress_agent/.env
+.DS_Store

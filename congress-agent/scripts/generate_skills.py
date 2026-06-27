@@ -1,0 +1,54 @@
+"""Generate skills/<name>/SKILL.md from the endpoint references in apis/<name>.md.
+
+Each SKILL.md gets YAML frontmatter (name + description) used by the
+orchestrator for skill selection, followed by the full endpoint reference.
+Run from anywhere: `python scripts/generate_skills.py`.
+"""
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+APIS = ROOT / "apis"
+SKILLS = ROOT / "skills"
+
+# One-line descriptions the orchestrator reads to pick relevant skills.
+DESCRIPTIONS = {
+    "bill": "Bills, resolutions, and enacted laws: actions, cosponsors, committees, text, summaries, titles, subjects, related bills, and amendments.",
+    "amendments": "Amendments to bills and to other amendments: actions, cosponsors, and text.",
+    "summaries": "CRS-written bill summaries, filterable by congress and bill type.",
+    "congress": "Congresses and their sessions (names, years, session dates).",
+    "member": "Members of Congress: profiles, sponsored and cosponsored legislation; filter by congress, state, and district.",
+    "house-vote": "House of Representatives roll call votes and how individual members voted.",
+    "committee": "Congressional committees and subcommittees and their bills, reports, nominations, and communications.",
+    "committee-report": "Committee reports (HRPT, SRPT, ERPT) and their text.",
+    "committee-print": "Committee prints and their text.",
+    "committee-meeting": "Scheduled committee meetings and meeting details.",
+    "hearing": "Printed congressional hearings.",
+    "congressional-record": "Congressional Record issues, filterable by date.",
+    "daily-congressional-record": "Daily Congressional Record by volume and issue, including articles.",
+    "bound-congressional-record": "Bound Congressional Record, filterable by date.",
+    "house-communication": "Communications received by the House (executive communications, presidential messages, petitions, memorials).",
+    "house-requirement": "House reporting requirements and their matching communications.",
+    "senate-communication": "Communications received by the Senate.",
+    "nomination": "Presidential nominations to the Senate: nominees, actions, committees, and hearings.",
+    "crsreport": "Congressional Research Service (CRS) reports.",
+    "treaty": "Treaties submitted to the Senate: actions, committees, and parts.",
+}
+
+
+def main() -> None:
+    SKILLS.mkdir(exist_ok=True)
+    written = 0
+    for name, description in DESCRIPTIONS.items():
+        body = (APIS / f"{name}.md").read_text()
+        out_dir = SKILLS / name
+        out_dir.mkdir(exist_ok=True)
+        content = f"---\nname: {name}\ndescription: {description}\n---\n\n{body}"
+        (out_dir / "SKILL.md").write_text(content)
+        written += 1
+        print(f"wrote {out_dir / 'SKILL.md'}")
+    print(f"\n{written} skills generated.")
+
+
+if __name__ == "__main__":
+    main()

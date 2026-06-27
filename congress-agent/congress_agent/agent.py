@@ -13,6 +13,8 @@ Flow:
                             fetches, performs them, and structures the results.
   3. fetch_planner       -- reads the skill's endpoint reference and proposes the
                             most useful API fetches for the sub-question.
+  4. visualization_agent -- (on demand) extracts entities/relationships from the
+                            conversation and opens an interactive knowledge graph.
 
 Skills are namespaced "<source>/<group>" (e.g. "congress/bill", "fec/candidate");
 the source routes each fetch to the right API via api_fetch. Sub-agents are wired
@@ -27,6 +29,7 @@ from .config import MODEL
 from .congress_api import api_fetch
 from .documents import download_document, read_document
 from .skills import get_skill, list_skills
+from .visualization import generate_visualization, generate_knowledge_graph
 
 
 # --- Layer 3: plan a set of fetches for one skill ------------------------------
@@ -140,6 +143,49 @@ skill_researcher = LlmAgent(
 )
 
 
+# --- Layer 3 (optional): interactive multi-mode visualization -----------------
+visualization_agent = LlmAgent(
+    name="visualization_agent",
+    model=MODEL,
+    description=(
+        "Extracts entities, relationships, events, and flows from a research "
+        "summary and opens a rich interactive multi-mode visualization."
+    ),
+    instruction=(
+        "You create dynamic visualizations that illustrate the COMPLEXITY of "
+        "government research findings.\n\n"
+        "Your input is a natural language summary (bills, members, committees, "
+        "votes, topics, legislative history, funding flows, etc.).\n\n"
+        "Steps:\n"
+        "1. Choose viz_type:\n"
+        "   - 'graph': best when there are many cross-connected entities\n"
+        "   - 'timeline': best when there is a clear sequence of dated events\n"
+        "   - 'sankey': best when data has flows (votes, funds, referrals)\n"
+        "   - 'dashboard': best for rich data with multiple dimensions\n"
+        "   - 'auto': let the system decide\n"
+        "2. Extract nodes (entities):\n"
+        "   - id: snake_case (e.g. 'hr3076', 'pelosi', 'commerce_cmte')\n"
+        "   - label: 1-4 words\n"
+        "   - type: bill | member | committee | topic | vote | other\n"
+        "   - weight: 1-5 (importance — affects node size)\n"
+        "3. Extract edges (relationships):\n"
+        "   - source/target: node ids\n"
+        "   - label: short verb phrase ('sponsored', 'chairs', 'voted for')\n"
+        "   - weight: 1-3\n"
+        "4. Extract events (for timeline):\n"
+        "   - id, label, date (YYYY-MM-DD), type (bill|vote|action|hearing|other)\n"
+        "5. Extract flows (for sankey):\n"
+        "   - source, target (names), value (numeric), label\n"
+        "6. Write a complexity_note: one sentence describing what makes this "
+        "   discussion structurally complex (many actors, layered processes, etc.).\n"
+        "7. Call generate_visualization with a JSON string containing all of the above.\n"
+        "8. Reply with one sentence confirming what was visualized.\n\n"
+        "Include as many real entities as you can extract. More detail = better graph."
+    ),
+    tools=[generate_visualization, generate_knowledge_graph],
+)
+
+
 # --- Layer 1: orchestrator (root) ----------------------------------------------
 root_agent = LlmAgent(
     name="gov_orchestrator",
@@ -182,10 +228,16 @@ root_agent = LlmAgent(
         "document_analyst tool yourself with:\n"
         "    URL: <the document url>\n"
         "    QUESTION: <what the user wants from it>\n"
+        "5. After all researchers return, write a '**Analysis**' section that\n"
+        "   synthesizes their structured findings into one coherent answer. Cite the\n"
+        "   skills/endpoints the facts came from, include relevant ids and Congress.gov\n"
+        "   URLs, and explicitly call out any gaps, errors, or missing data.\n"
+        "6. Visualization: if the user asks to 'show a graph', 'visualize',\n"
+        "   or 'map the relationships', call the visualization_agent tool, passing the\n"
+        "   full **Analysis** text as the input. Do NOT call it automatically on every\n"
+        "   response — only when the user requests it or the response has rich\n"
+        "   multi-entity relationships that would clearly benefit from a graph.\n\n"
+        "Only use skills returned by list_skills. Never invent endpoints or values."
     ),
-    tools=[
-        list_skills,
-        AgentTool(agent=skill_researcher),
-        AgentTool(agent=document_analyst),
-    ],
+    tools=[list_skills, AgentTool(agent=skill_researcher), AgentTool(agent=document_analyst), AgentTool(agent=visualization_agent)],
 )

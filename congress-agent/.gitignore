@@ -3,4 +3,5 @@ __pycache__/
 *.pyc
 .env
 congress_agent/.env
+congress_agent/.adk
 .DS_Store

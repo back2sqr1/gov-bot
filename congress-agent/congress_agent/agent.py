@@ -164,5 +164,5 @@ root_agent = LlmAgent(
         "   multi-entity relationships that would clearly benefit from a graph.\n\n"
         "Only use skills returned by list_skills. Never invent endpoints or values."
     ),
-    tools=[list_skills, AgentTool(agent=skill_researcher), AgentTool(agent=visualization_agent)],
+    tools=[list_skills, AgentTool(agent=skill_researcher), AgentTool(agent=document_analyst), AgentTool(agent=visualization_agent)],
 )

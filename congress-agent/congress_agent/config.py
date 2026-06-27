@@ -15,3 +15,25 @@ CONGRESS_API_KEY = os.environ.get("CONGRESS_API_KEY", "")
 
 # Base URL for the Congress.gov REST API.
 CONGRESS_API_BASE = "https://api.congress.gov/v3"
+
+# OpenFEC API key — get one free at https://api.open.fec.gov/developers/
+# (DEMO_KEY works for light testing). Defaults to DEMO_KEY if unset.
+FEC_API_KEY = os.environ.get("FEC_API_KEY", "DEMO_KEY")
+
+# Base URL for the OpenFEC REST API.
+FEC_API_BASE = "https://api.open.fec.gov/v1"
+
+# Per-source fetch configuration, keyed by a skill's source (skills/<source>/...).
+# `extra_params` are merged into every request for that source.
+SOURCES = {
+    "congress": {
+        "base": CONGRESS_API_BASE,
+        "api_key": CONGRESS_API_KEY,
+        "extra_params": {"format": "json"},
+    },
+    "fec": {
+        "base": FEC_API_BASE,
+        "api_key": FEC_API_KEY,
+        "extra_params": {},
+    },
+}

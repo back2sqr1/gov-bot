@@ -1,3 +1,14 @@
 google-adk>=1.0.0
 litellm>=1.40.0
 requests>=2.31.0
+
+# Document extraction (document_analyst sub-agent)
+pypdf>=4.0.0            # embedded-text extraction from PDFs
+
+# Optional OCR for scanned PDFs. Also needs the system binaries
+# `poppler` (for pdf2image) and `tesseract` (for pytesseract):
+#   macOS:  brew install poppler tesseract
+#   Debian: apt-get install poppler-utils tesseract-ocr
+pdf2image>=1.17.0
+pytesseract>=0.3.10
+Pillow>=10.0.0
